@@ -1,0 +1,133 @@
+LNMP（Linux、Nginx、MySQL、PHP）
+在RHEL7系统中，源码安装Nginx
+使用RPM包安装MariaDB、PHP、PHP-FPM软件。
+操作过程中需要安装的软件列表如下：
+nginx(gcc openssl-devel pcre-devel)
+mariadb、mariadb-server(数据库端口3306)、mariadb-devel
+php、php-fpm(php服务启动端口9000)、php-mysql (源码包php-fpm)
+
+==============部署LNMP环境============
+
+1)使用域名安装基础依赖包
+yum -y install gcc openssl-devel pcre-devel
+yum -y install mariadb madiadb-server Mariadb-devel php php-mysql
+2)源码安装Nginx
+[root@proxy ~]# useradd -s /sbin/nologin  nginx
+[root@proxy ~]# tar -xf nginx-1.12.2.tar.gz
+[root@proxy ~]# cd nginx-1.12.2
+[root@proxy nginx-1.12.2]# ./configure   \
+> --user=nginx   \  
+> --group=nginx  \
+> --with-http_ssl_module
+[root@proxy ~]# make && make install
+[root@proxy ~]# cd /root/lnmp_soft
+[root@proxy ~]#yum -y install php-fpm
+3)启动服务
+/usr/local/nginx/sbin/ngins  #启动nginx服务(ln -s /usr/local/nginx/sbin/ngins /sbin)80
+systemctl start mariadb  (3306)
+systemctl enbale mariadb     #启动mariadb服务并开机自启
+systemctl start php-fpm   (9000)
+systemctl enable php-fpm     #启动php服务并开机自启 systemctl statu php-fpm 查看服务状态
+
+==================构建LNMP平台 =================  
+步骤一： php-fpm配置文件
+1）查看php-fpm配置文件（实验中不需要修改该文件）
+[root@proxy etc]# vim /etc/php-fpm.d/www.conf
+[www]
+listen = 127.0.0.1:9000            //PHP端口号
+pm.max_children = 32                //最大进程数量
+pm.start_servers = 15                //最小进程数量
+pm.min_spare_servers = 5            //最少需要几个空闲着的进程
+pm.max_spare_servers = 32            //最多允许几个进程处于空闲状态
+
+步骤二：修改Nginx配置文件并启动服务
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+location / {
+            root   html;
+            index  index.php  index.html   index.htm;
+}
+#设置默认首页为index.php，当用户在浏览器地址栏中只写域名或IP，不说访问什么页面时，服务器会把默认首页index.php返回给用户
+        location  ~  \.php$  {
+            root           html;
+            fastcgi_pass   127.0.0.1:9000;    #将请求转发给本机9000端口，PHP解释器
+            fastcgi_index  index.php;
+            #fastcgi_param   SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            include        fastcgi.conf;      (需要更改include的后面路径)
+        }
+[root@proxy ~]# /usr/local/nginx/sbin/nginx -s reload
+
+步骤三：创建PHP页面，测试LNMP架构能否解析PHP页面
+1）创建PHP测试页面1，可以参考lnmp_soft/php_scripts/test.php：
+[root@proxy ~]# vim /usr/local/nginx/html/test.php
+<?php
+$i="This is a test Page";
+echo $i;
+?>
+2)创建PHP测试页面,连接并查询MariaDB数据库
+[root@proxy ~]#cp /root/lnmp_soft/php_scripts/mysql.php /usr/local/nginx/html/
+3)验证
+firefox http://192.168.4.5/test.php
+firefox http://192.168.4.5/mysql.php
+
+==========================地址重写====================
+regex   正则表达式
+步骤一：修改配置文件(访问a.html重定向到b.html)
+1）修改Nginx服务配置：
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+location / {
+    root   html;
+index  index.html index.htm;
+rewrite /a.html  /b.html ;(地址不会跳转,改为rewrite /a.html  /b.html redirect;地址也会跳到b.html) 
+}
+}
+[root@proxy ~]# echo "BB" > /usr/local/nginx/html/b.html
+[root@proxy ~]# /usr/local/nginx/sbin/nginx  -s  reload
+[root@client ~]# firefox  http://192.168.4.5/a.html
+
+步骤二:修改配置文件(访问192.168.4.5的请求重定向至www.tmooc.cn)
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  localhost;
+rewrite ^/ http://www.tmooc.cn;    #(只要是/开头的都跳转到tmooc)
+location / {
+    root   html;
+index  index.html index.htm;
+# rewrite /a.html  /b.html  redirect(重定向的意思);
+}
+}
+nginx -s reload
+步骤四：修改配置文件(访问192.168.4.5/下面子页面，重定向至www.tmooc.cn/下相同的页面)
+rewrite ^/ http://www.tmooc.cn;改为 rewrite ^/(.*)$ http://www.tmooc.cn/$1;
+nginx -s reload
+
+if ($http_user_agent ~* firefox) {            //识别客户端firefox浏览器
+rewrite ^(.*)$ /firefox/$1;               #这里，~符号代表正则匹配，*符号代表不区分大小写
+}
+
+地址重写格式
+rewrite 旧地址 新地址 [选项]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

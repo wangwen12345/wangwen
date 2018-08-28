@@ -1,0 +1,144 @@
+Nginx代理服务器:                proxy:代理的意思
+代理 调度 健康检查
+[root@proxy ~]# cp /usr/local/nginx/conf/nginx.conf.default /usr/local/nginx/conf/nginx.con
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+http {
+.. ..
+upstream webserver {
+                server 192.168.2.100 weight=1 max_fails=1 fail_timeout=30;
+                server 192.168.2.200 weight=2 max_fails=2 fail_timeout=30;
+                server 192.168.2.101 down;
+        }#weight设置服务器权重值，默认值为1 表示访问100次数在1那么200的次数为2
+#max_fails设置最大失败次数1次失败旧不再去访问
+#fail_timeout设置失败超时时间，单位为秒,30秒后再去访问
+#down标记服务器已关机，不参与集群调度
+echo "192.168.4.5"  |md5sum //ip转换为16进制
+
+====部署支持4层tcp/udp代理的Nginx(必须1.9版本以上,1.9以下只支持httpd的调度)服务器======
+nginx -s stop
+rm -rf /usr/local/nginx (killall nginx)
+cd nginx-1.12.2.tar.gz
+./configure \
+--with-stream \            //开启4层反向代理功能
+--with-http_ssl_module    //开启SSL加密功能
+make && make install
+
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+stream {
+            upstream xyz {
+               server 192.168.2.100:22;            //后端SSH服务器的IP和端口
+               server 192.168.2.200:22;
+}
+            server {
+                listen 12345;         //Nginx监听的端口(实验不能写22因为我们ssh22端口用了)
+                proxy_pass xyz;
+             }
+}
+验证
+[root@client ~]# ssh 192.168.4.5 -p 12345   (-p指定端口 数据库-P)         //使用该命令多次访问查看效果
+查看nginx服务 ss  -antup |grep nginx
+=================1优化Nginx并发量======================
+修改Nginx配置文件，增加并发量
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+worker_processes  1;                    //与CPU核心数量一致
+events {
+worker_connections 65535;        //每个worker最大并发连接数                   
+}
+[root@proxy ~]# ab -n 2000 -c 2000 http://192.168.4.5/  //c表示人数,n表示点击网站的次数
+
+优化Linux内核参数（最大文件数量）
+[root@proxy ~]# vim /etc/security/limits.conf
+    .. ..
+*               soft    nofile            100000
+*               hard    nofile            100000
+#该配置文件分4列，分别如下：
+#用户或组    硬限制或软限制    需要限制的项目   限制的值
+
+==================2优化Nginx数据包头缓存=========================
+修改Nginx配置文件，增加数据包头部缓存大小
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+http {
+client_header_buffer_size    1k;        //默认请求包头信息的缓存    
+large_client_header_buffers  4 1M;        //大请求包头部信息的缓存个数与容量
+.. ..
+}
+
+=================3优化本地浏览器缓存====================
+使用Firefox浏览器查看缓存 输入about:cache
+server {
+        listen       80;
+        server_name  localhost;
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+location ~* \.(jpg|jpeg|gif|png|css|js|ico|xml)$ {
+expires        30d;            //定义客户端缓存时间为30天
+}
+[root@proxy ~]# cp /usr/share/backgrounds/day.jpg /usr/local/nginx/html
+[root@proxy ~]# nginx -s reload
+[root@client ~]# firefox http://192.168.4.5/day.jpg //验证
+
+====================4自定义报错页面===================
+error_page   404  /40x.html;    //自定义错误页面
+[root@proxy ~]# vim /usr/local/nginx/html/40x.html        //生成错误页面
+Oops,No NO no page …
+[root@proxy ~]# nginx -s reload
+[root@client ~]# firefox http://192.168.4.5/xxxxx       //验证 访问一个不存在的页面
+常见的http状态码
+200一切正常  301永久重定向  302临时重定向 401用户名或密码错误 403禁止访问 404文件不存在
+414请求URI头部过长 500服务器内部错误 502bad gateway
+
+==================如何查看服务器状态信息==============================
+1 重装nginx rm-rf /usr/local/nginx
+[root@proxy nginx-1.12.2]# ./configure   \
+> --with-http_ssl_module                        //开启SSL加密功能
+> --with-stream                                //开启TCP/UDP代理模块
+> --with-http_stub_status_module                //开启status状态页面
+[root@proxy nginx-1.12.2]# make && make install    //编译并安装
+2修改配置文件
+[root@proxy ~]# cat /usr/local/nginx/conf/nginx.conf
+… …
+server {
+location /status {
+                stub_status on;
+        }
+}
+3验证
+[root@proxy ~]# curl  http://192.168.4.5/status
+Active connections: 1 
+server accepts handled requests
+ 10 10 3 
+Reading: 0 Writing: 1 Waiting: 0
+
+Active connections：当前活动的连接数量。
+Accepts：已经接受客户端的连接总数量。
+Handled：已经处理客户端的连接总数量（一般与accepts一致，除非服务器限制了连接数量）。
+Requests：客户端发送的请求数量。
+Reading：当前服务器正在读取客户端请求头的数量。
+Writing：当前服务器正在写响应信息的数量。
+Waiting：当前多少客户端在等待服务器的响应。
+
+=====================对页面进行压缩、服务器内存缓存=====================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

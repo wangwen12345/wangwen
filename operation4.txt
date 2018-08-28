@@ -1,0 +1,21 @@
+================数据库================
+memcached是高性能的分布式缓存服务器 功能简单,数据会丢失,速度极快
+key-value,缓存数据库
+
+步骤1: 构建memcached服务
+yum -y isntall memcached
+配置文件/usr/lib/systemd/system/memcached.server
+/etc/sysconfig/memcached
+步骤2:使用telnet访问memcached服务器
+yum -y install telnet
+
+Ctrl+v ↓ 大写的I 输入# ESC 批量加入#
+
+ for i in 100 200
+ do
+ ssh -X 192.168.4.$i 
+ yum -y isntall php-mysql
+done
+
+
+RGB颜色对照表

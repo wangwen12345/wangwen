@@ -1,0 +1,143 @@
+web服务器:
+nginx   (由俄罗斯人编写的轻量级HTTP服务器)
+Tengine (国内用的比较多的,是由淘宝团队开发2011开源,在nginx上开发而来) 
+-Apache Nginx tengine Lighttpd   (PHP语言首选Nginx)
+-Tomcat IBM wenSphere Jboss      (jave语言首选Tomcat)
+
+ngnix软件安装
+yum -y install gcc pcre-devel openssl-devel
+cd nginx-1.10.3
+[root@proxy nginx-1.10.3]# ./configure \   #./configure --help | grep ssl 查看关于ssl的选项
+--prefix=/usr/local/nginx \                #指定安装目录(不写默认为该位置)
+--user=nginx \                             #指定账户
+--group=nginx \                            #指定组名称
+--with-http_ssl_module                     #支持SSL加密功能
+[root@proxy nginx-1.10.3]#make && make install
+[root@proxy ~]# /usr/local/nginx/sbin/nginx                    //启动服务
+                /usr/local/nginx/sbin/nginx -s stop            //关闭服务
+[root@proxy ~]# /usr/local/nginx/sbin/nginx –V                 //查看软件信息
+[root@proxy nginx]# ps aux |grep nginx    (netstat antup | grep nginx)  //查看服务是否启动
+ /usr/local/nginx/sbin/nginx -s reload        //重新加载配置文件(不关服务的情况下直接让修改的文件生效)
+ ln -s /usr/local/nginx/sbin/nginx /sbin/     //方便后期使用(建立软连接/sbin/)
+
+步骤二：升级Nginx服务器
+
+1）编译新版本nginx软件
+[root@proxy ~]# tar  -zxvf   nginx-1.12.2.tar.gz
+[root@proxy ~]# cd nginx-1.12.2
+[root@proxy nginx-1.12.2]# ./configure   \
+> --prefix=/usr/local/nginx   \ 
+> --user=nginx   \ 
+> --group=nginx  \ 
+> --with-http_ssl_module
+[root@proxy nginx-1.12.2]# make 
+2)备份老的nginx主程序，并使用编译好的新版本nginx替换老版本
+[root@proxy nginx-1.12.2]# mv /usr/local/nginx/sbin/nginx  /usr/local/nginx/sbin/nginxold (相当于mv /usr/local/nginx/sbin/nginx{,old})                            
+[root@proxy nginx-1.12.2]# cp objs/nginx  /usr/local/nginx/sbin/         //拷贝新版本
+[root@proxy nginx-1.12.2]# make upgrade (或者killall nginx; nginx)       //升级
+[root@proxy ~]# /usr/local/nginx/sbin/nginx –v   
+netstat命令可以查看系统中启动的端口信息，该命令常用选项如下：
+-a显示所有端口的信息
+-n以数字格式显示端口号
+-t显示TCP连接的端口
+-u显示UDP连接的端口
+-l显示服务正在监听的端口信息，如httpd启动后，会一直监听80端口
+-p显示监听端口的服务名称是什么（也就是程序名称）
+[root@proxy ~]# netstat  -anptu  |  grep nginx (查看服务是否已启ps aux |grep nginx)
+
+==================虚拟机配置基于域名的 nginx 虚拟主机=================
+修改/usr/local/nginx/conf/nginx.conf
+[root@proxy ~]# vim /usr/local/nginx/conf/nginx.conf
+.. ..
+server {
+        listen       80;
+        server_name  www.a.com;                              //修改域名
+        auth_basic "Input Password:";                        //认证提示符
+        auth_basic_user_file "/usr/local/nginx/pass";        //认证密码文件
+        location / {
+            root   html;                                     //网页根目录
+            index  index.html index.htm;                     //网页类型
+        }
+  }
+
+生成密码文件，创建用户及密码
+使用htpasswd命令创建账户文件，需要确保系统中已经安装了httpd-tools。
+[root@proxy ~]# yum -y install  httpd-tools
+[root@proxy ~]# htpasswd -c /usr/local/nginx/pass   tom      //新创建密码文件 -c(create创建)
+[root@proxy ~]# htpasswd  /usr/local/nginx/pass     jerry    //追加用户，不使用-c选项
+[root@proxy ~]# /usr/local/nginx/sbin/nginx -s reload        //重新加载配置文件   
+ ==================================================================
+虚拟主机(1台服务器实现多个网站访问)
+光标放在第一个#CTRL+v 之后按↓到最后一个# 按键x删除所有#
+mv /usr/local/nginx/sbin/nginx{,bat}相当于mv /usr/local/nginx/sbin/nginx /usr/local/nginx/sbin/nginxbat
+
+
+=====================================https加密网站===============================
+对称算法     AES,DES       123--------------123
+非对称算法   RSA,DSA       123--------------u9i
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,382 @@
+=============Subversion服务器(svn)===========
+1) yum -y install subversion  装软件
+mkdir  /var/svn   建目录
+svnadmin create /var/snv/project  创建版本库(共享)
+2)导入数据
+[root@web1 ~]# cd /usr/lib/systemd/system/ 
+[root@web1 ~]# svn import . file:///var/svn/project/ -m "Init Data"  //-m 添加注释信息 (以数据库形式导入的,在/var/svn/project下看不到导入的任何文件)
+3)修改配置文件
+vim /var/svn/project/conf/svnserve.conf
+anon-access = none    //19行，匿名无任何权限
+auth-access = write   //20行，有效账户可写
+password-db = passwd  //27行，密码文件
+authz-db = authz      //34行，ACL访问控制列表文件
+
+vim /var/svn/project/conf/passwd
+harry = 123456 //用户名和密码
+tom = 123456   //用户名和密码
+
+vim /var/svn/project/conf/authz
+[/]                      //定义acl访问控制
+harry = rw
+tom = rw
+
+4)启服务
+svnserve -d  -r /var/svn/project  //-d 放到后台 -r指定共享的仓库路径(客户端可以直接访问svn://192.168.2.100直接到此仓库否则需要访问svn://192.168.2.100/var/svn/project)
+
+客户端测试(192.168.2.200)
+1)将服务器的代码下载到本地
+cd /tmp
+svn co --username harry --password 123456 svn://192.168.2.100/ code  (co checkout缩写 code本地路径)[root@web2 ~]# cd /tmp/code
+[root@web2 code]# vim user.slice                 //挑选任意文件修改其内容
+[root@web2 code]# svn ci -m "modify user"        //将本地修改的数据同步到服务器
+[root@web2 code]# svn update                    //将服务器上新的数据同步到本地
+[root@web2 code]# svn info     svn://192.168.2.100    //查看版本仓库基本信息
+[root@web2 code]# svn log     svn://192.168.2.100    //查看版本仓库的日志
+
+[root@web2 code]# echo "test" > test.sh        //本地新建一个文件
+[root@web2 code]# svn ci -m "new file"            //提交失败，该文件不被svn管理 (ci是commit的缩写提交,委托的意思)
+[root@web2 code]# svn add test.sh                //将文件或目录加入版本控制
+[root@web2 code]# svn ci -m "new file"            //再次提交，成功
+
+[root@web2 code]# sed -i 'd' test.sh    
+[root@web2 code]# svn revert test.sh               //文件内容修改为提交服务器还原
+
+[root@web2 code]# sed -i '1a #test###' test.sh   //修改本地副本中的代码文件
+[root@web2 code]# svn ci  -m  "xxx"              //提交代码
+[root@web2 code]# svn merge -r5:4   test.sh     //将文件从版本5还原到版本4
+
+svn cat -r5 svn://192.168.2.100/test.sh      //查看服务器版本5中的文件
+
+ls -R |wc -l 查看目录下有多少文件
+
+
+============================Github(作者linus)=========================
+rpm -e 卸载
+rpm -qf /usr/bin/ls  查询ls的命令包
+rpm -qa 查询电脑的所有软件
+rpm -qi 查询软件的信息
+rpm -ql 列出软件的所有文件
+rpm -ivh 装软件
+
+什么是rpm?
+    1、压缩包
+
+案例3：制作nginx的RPM包
+1)装软件包yum -y isntall rpm-build
+2)生成rpmbuild目录 rpmbuild -ba nginx.spec  //会报错,无影响
+3)将源码软件拷贝到SOURCES目录 [root@web1 ~]# cp nginx-1.12.2.tar.gz /root/rpmbuild/SOURCES/
+Version 版本     release rpm包的第几个版本   summary 概述  setup -q 解压和cd进入目录
+vim SPECS/xx.spec
+软件基本信息 
+下列3项不能乱写
+name:nginx
+version:1.12.2(版本)
+source0:nginx-1.12.2.tar.gz (源码包)
+
+%configure改为
+./configure
+
+%file (对那些文件或目录打包)
+/usr/local/nginx/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

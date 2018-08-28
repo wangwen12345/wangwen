@@ -1,0 +1,85 @@
+=======================Tomcat=======================
+JDK软件包下载在openJDK下载不推荐在官方下载(jdk被oracle收购)
+
+步骤1:部署tomacat服务器
+1)使用RPM安装JDK环境
+[root@web1 ~]# yum –y install  java-1.8.0-openjdk                //安装JDK
+[root@web1 ~]# yum -y install java-1.8.0-openjdk-headless        //安装JDK
+[root@web1 ~]# java -version                                    //查看JAVA版本
+
+2)安装Tomcat（apache-tomcat-8.0.30.tar.gz软件包，在lnmp_soft中有提供）
+[root@web1 ~]# tar -xf  apache-tomcat-8.0.30.tar.gz
+[root@web1 ~]# mv apache-tomcat-8.0.30  /usr/local/tomcat
+
+3)启动服务
+[root@web1 ~]# /usr/local/tomcat/bin/startup.sh
+[root@web1 ~]# firewall-cmd --set-default-zone=trusted
+[root@web1 ~]# setenforce 0
+
+4)服务器端口信息
+[root@web1 ~]# netstat -nutlp |grep java        //查看java监听的端口
+tcp        0      0 :::8080              :::*                LISTEN      2778/java           
+tcp        0      0 ::ffff:127.0.0.1:8005     :::*         LISTEN       2778/java  
+如果检查端口时，8005端口启动非常慢，可用使用下面的命令用urandom替换random（非必须操作）。
+[root@web1 ~]# mv /dev/random  /dev/random.bak
+[root@web1 ~]# ln -s /dev/urandom  /dev/random
+[root@web2 ~]# firefox http://192.168.2.100:8080
+
+步骤二:修改Tomcat配置文件
+创建测试JSP页面
+[root@web1 ~]# vim  /usr/local/tomcat/webapps/ROOT/test.jsp
+<html>
+<body>
+<center>
+Now time is: <%=new java.util.Date()%>            //显示服务器当前时间
+</center>
+</body>
+</html>
+重启服务
+[root@web1 ~]# /usr/local/tomcat/bin/shutdown.sh
+[root@web1 ~]# /usr/local/tomcat/bin/startup.sh
+验证
+[root@client ~]# firefox http://192.168.2.100:8080
+[root@client ~]# firefox http://192.168.2.100:8080/test.jsp
+
+案例2
+使用Tomcat部署加密虚拟主机，实现以下要求：
+实现两个基于域名的虚拟主机，域名分别为：www.a.com和 www.b.com
+使用www.a.com域名访问的页面根路径为/usr/local/tomcat/a/ROOT
+使用www.b.com域名访问的页面根路径为/usr/local/tomcat/b/base
+访问www.a.com/test时，页面自动跳转到/var/www/html目录下的页面
+访问页面时支持SSL加密通讯
+私钥、证书存储路径为/usr/local/tomcat/conf/cert
+每个虚拟主机都拥有独立的访问日志文件
+配置tomcat集群环境
+
+步骤一：配置服务器虚拟主机
+1）修改server.xml配置文件，创建虚拟主机
+[root@web1 ~]# vim /usr/local/tomcat/conf/server.xml
+… …
+<Host name="www.a.com" appBase="a" unpackWARS="true" autoDeploy="true">
+</Host>
+<Host name="www.b.com" appBase="b" unpackWARS="true" autoDeploy="true">
+</Host>
+
+
+
+步骤四：配置Tomcat支持SSL加密网站
+1）创建加密用的私钥和证书文件
+[root@web1 ~]# keytool -genkeypair -alias tomcat -keyalg RSA -keystore /usr/local/tomcat/keystore                //提示输入密码为:123456
+
+
+
+
+======================varnish代理服务器===============
+nginx 代理
+varnish 代理+缓存
+
+
+
+
+
+
+
+
+
